@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Хлеб на Massa Madre – реальные цены от AI</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #fef3e4;
+            margin: 0;
+            padding: 20px;
+            color: #2c2418;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+            padding: 20px 24px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-top: 0;
+            color: #b35f1b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        h1 small {
+            font-size: 0.8rem;
+            background: #f0e2d0;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: normal;
+        }
+        h2 {
+            font-size: 1.3rem;
+            border-left: 5px solid #d48c3c;
+            padding-left: 15px;
+            margin: 1.5rem 0 1rem 0;
+            color: #4a2e14;
+        }
+        h3 {
+            font-size: 1.1rem;
+            margin: 0.8rem 0 0.5rem;
+            color: #6b4423;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: #fffaf2;
+            border-radius: 24px;
+            padding: 16px 20px;
+            border: 1px solid #f0e2d0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+        .param-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            gap: 8px;
+        }
+        .param-row label {
+            font-weight: 600;
+            flex: 1 1 180px;
+            font-size: 0.9rem;
+        }
+        .param-row input, .param-row select {
+            flex: 2 1 200px;
+            padding: 8px 12px;
+            border-radius: 48px;
+            border: 1px solid #d9c2a4;
+            background: white;
+            font-size: 0.9rem;
+        }
+        .inline-hint {
+            font-size: 0.7rem;
+            color: #866f50;
+            margin-left: 6px;
+        }
+        .results {
+            background: #f2e6d8;
+            border-radius: 28px;
+            padding: 20px 24px;
+            margin-top: 24px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ebddce;
+        }
+        th {
+            background: #e7d8c6;
+            font-weight: 600;
+        }
+        footer {
+            margin-top: 30px;
+            font-size: 0.75rem;
+            text-align: center;
+            color: #bb9f7e;
+            border-top: 1px solid #eedfcb;
+            padding-top: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .clickable-row {
+            cursor: pointer;
+            transition: background 0.1s ease;
+        }
+        .clickable-row:hover {
+            background: #f6efe4;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #4a2e14;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        optgroup {
+            font-weight: bold;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top-color: #b35f1b;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🍞 Хлеб на Massa Madre <small>реальные цены от AI (OpenRouter API)</small></h1>
+    <p><strong>Одинарный клик</strong> по строке муки в таблице → выбор продавца.<br>
+    <strong>Двойной клик</strong> → AI-помощник анализирует рынок и обновляет цену через API.</p>
+
+    <div class="grid">
+        <div class="card">
+            <h3>🌾 Мука (выберите продавца)</h3>
+            <div class="param-row"><label>Тип муки / магазин</label><select id="flourPreset"></select></div>
+            <div class="param-row"><label>Цена муки (руб/кг)</label><input type="number" id="flourPrice" value="58" step="1"></div>
+            <div class="param-row"><label>Цена соли (руб/кг)</label><input type="number" id="saltPrice" value="22" step="1"></div>
+            <div class="inline-hint">*Двойной клик по строке в таблице обновит цену через AI.</div>
+        </div>
+        <div class="card">
+            <h3>📦 Объём производства</h3>
+            <div class="param-row"><label>Буханок в замесе (партия)</label><input type="number" id="loavesPerBatch" value="11" step="1" min="1"></div>
+            <div class="param-row"><label>Буханок в закладке (в печь)</label><input type="number" id="loavesPerOvenLoad" value="3" step="1" min="1"></div>
+            <div class="param-row"><label>Замесов в день</label><input type="number" id="batchesPerDay" value="1" step="0.5" min="0.5"></div>
+            <div class="param-row"><label>Рабочих дней в месяц</label><input type="number" id="workDaysMonth" value="22" step="1"></div>
+        </div>
+        <div class="card">
+            <h3>🔥 Энергия</h3>
+            <div class="param-row"><label>Мощность печи (кВт)</label><input type="number" id="ovenPower" value="4.0" step="0.2"></div>
+            <div class="param-row"><label>Время выпечки (мин/закладка)</label><input type="number" id="bakingTimeMin" value="35" step="1"></div>
+            <div class="param-row"><label>Разогрев печи (мин/день)</label><input type="number" id="preheatTimeMin" value="15" step="1"></div>
+            <div class="param-row"><label>Тариф э/э (руб/кВт·ч)</label><input type="number" id="electricityTariff" value="6.29" step="0.1"></div>
+            <div class="param-row"><label>Мощность тестомеса (кВт)</label><input type="number" id="mixerPower" value="1.5" step="0.2"></div>
+            <div class="param-row"><label>Время замеса (мин)</label><input type="number" id="mixingTimeMin" value="15" step="1"></div>
+        </div>
+        <div class="card">
+            <h3>🏢 Постоянные расходы</h3>
+            <div class="param-row"><label>Аренда (руб/м² в год)</label><input type="number" id="rentAnnualPerSqm" value="13500" step="500"></div>
+            <div class="param-row"><label>Площадь (м²)</label><input type="number" id="areaSqm" value="20" step="1"></div>
+            <div class="param-row"><label>Амортизация (руб/мес)</label><input type="number" id="depreciationMonth" value="5354" step="100"></div>
+            <div class="param-row"><label>Коммунальные (руб/мес)</label><input type="number" id="utilitiesMonth" value="5000" step="500"></div>
+        </div>
+        <div class="card">
+            <h3>👨‍🍳 Оплата труда</h3>
+            <div class="param-row"><label>Ставка пекаря (руб/час)</label><input type="number" id="laborRate" value="300" step="10"></div>
+            <div class="param-row"><label>Время на партию (часы)</label><input type="number" id="laborHoursPerBatch" value="3.5" step="0.25"></div>
+            <div class="param-row"><label>Кол-во пекарей</label><input type="number" id="bakersCount" value="1" step="0.5"></div>
+            <div class="param-row"><label>Страховые взносы (%)</label><input type="number" id="insuranceRate" value="30.2" step="0.5"></div>
+        </div>
+    </div>
+
+    <div class="results">
+        <h2>📊 Сводные таблицы (основные показатели)</h2>
+        <h3>📋 Сводный контрольный лист</h3>
+        <table id="controlSheetTable"><thead><tr><th>Показатель</th><th>На 1 партию</th><th>На месяц</th></tr></thead><tbody><tr><td colspan="2">Загрузка...</tbody></table>
+        <h3>⚡ Затраты на технологические процессы (энергия)</h3>
+        <table id="techEnergyTable"><thead><tr><th>Процесс</th><th>На партию</th><th>На месяц</th></tr></thead><tbody><tr><td colspan="2">Загрузка...</tbody></td>
+        <h3>👨‍🍳 Полные затраты с ручным трудом (на партию)</h3>
+        <table id="laborFullTable"><thead><tr><th>Статья</th><th>Сумма (руб)</th></tr></thead><tbody><tr><td colspan="2">Загрузка...</tbody></tr>
+        <h3>💰 Полная сводная себестоимость (ингредиенты + энергия + труд)</h3>
+        <table id="fullCostSummaryTable"><thead><tr><th>Статья затрат</th><th>Сумма (руб)</th><th>% от полной</th></tr></thead><tbody><tr><td colspan="3">Загрузка...</tbody></tr>
+    </div>
+
+    <div class="section">
+        <h2>📋 Детальные таблицы</h2>
+        <h3>1. Ингредиенты на партию и на месяц</h3>
+        <table id="ingredientsTable"><thead><tr><th>Ингредиент</th><th>На 1 партию</th><th>На месяц</th></tr></thead><tbody><tr><td colspan="2">Загрузка...</tbody></tr>
+        <h3>2. Параметры выпечки</h3>
+        <table id="bakingParamsTable"><tbody><tr><td colspan="2">Загрузка...</tbody></tr>
+        <h3>3. Технологический процесс</h3>
+        <table id="techProcessTable"><tbody><tr><td colspan="2">Загрузка...</tbody></tr>
+        <h3>4. Контрольные точки качества</h3>
+        <table id="qualityTable"><tbody><tr><td colspan="2">Загрузка...</tbody></tr>
+        <h3>5. Оборудование и инвентарь</h3>
+        <table id="equipmentTable"><tbody><tr><td colspan="2">Загрузка...</tbody></tr>
+        <h3>6. Стоимость муки (сравнение) – кликабельно</h3>
+        <table id="flourCostTable"><tbody><tr><td colspan="2">Загрузка...</tbody></tr>
+        <h3>7. Себестоимость ингредиентов (на партию и месяц)</h3>
+        <table id="ingredientsCostTable"><tbody><tr><td colspan="2">Загрузка...</tbody></tr>
+        <h3>8. Затраты на закваску (на партию и месяц)</h3>
+        <table id="starterCostTable"><tbody><tr><td colspan="2">Загрузка...</tbody></tr>
+        <h3>9. Уварка хлеба</h3>
+        <table id="shrinkageTable"><tbody><tr><td colspan="2">Загрузка...</tbody></tr>
+    </div>
+    <div id="toast" class="toast"></div>
+    <footer>💡 <strong>Двойной клик</strong> по строке → AI запрашивает реальную рыночную цену через OpenRouter API (модель gpt-4o-mini). Розничные цены включают НДС.</footer>
+</div>
+
+<script>
+    const vendors = [
+        { id: "belon_opt_fs", group: "Белонежная (опт)", name: "ФудСити", price: 58, brand: "belon" },
+        { id: "belon_opt_metro", group: "Белонежная (опт)", name: "Метро", price: 60, brand: "belon" },
+        { id: "belon_retail_pyater", group: "Белонежная (розница)", name: "Пятёрочка", price: 72, brand: "belon" },
+        { id: "belon_retail_magnit", group: "Белонежная (розница)", name: "Магнит", price: 74, brand: "belon" },
+        { id: "belon_retail_globus", group: "Белонежная (розница)", name: "Глобус", price: 76, brand: "belon" },
+        { id: "belon_retail_perek", group: "Белонежная (розница)", name: "Перекрёсток", price: 78, brand: "belon" },
+        { id: "frants_opt_fs", group: "Французская штучка (опт)", name: "ФудСити", price: 60, brand: "frants" },
+        { id: "frants_opt_metro", group: "Французская штучка (опт)", name: "Метро", price: 62, brand: "frants" },
+        { id: "frants_retail_pyater", group: "Французская штучка (розница)", name: "Пятёрочка", price: 85, brand: "frants" },
+        { id: "frants_retail_magnit", group: "Французская штучка (розница)", name: "Магнит", price: 87, brand: "frants" },
+        { id: "frants_retail_globus", group: "Французская штучка (розница)", name: "Глобус", price: 89, brand: "frants" },
+        { id: "frants_retail_perek", group: "Французская штучка (розница)", name: "Перекрёсток", price: 91, brand: "frants" }
+    ];
+
+    let vendorPrices = {};
+    vendors.forEach(v => { vendorPrices[v.id] = v.price; });
+
+    function showToast(message, duration = 2000) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.opacity = '1';
+        setTimeout(() => { toast.style.opacity = '0'; }, duration);
+    }
+
+    function getParams() {
+        let flourPrice = parseFloat(document.getElementById('flourPrice').value);
+        return {
+            flourPrice: flourPrice,
+            saltPrice: parseFloat(document.getElementById('saltPrice').value),
+            loavesPerBatch: parseInt(document.getElementById('loavesPerBatch').value),
+            loavesPerOvenLoad: parseInt(document.getElementById('loavesPerOvenLoad').value),
+            batchesPerDay: parseFloat(document.getElementById('batchesPerDay').value),
+            workDaysMonth: parseFloat(document.getElementById('workDaysMonth').value),
+            ovenPower: parseFloat(document.getElementById('ovenPower').value),
+            bakingTimeMin: parseFloat(document.getElementById('bakingTimeMin').value),
+            preheatTimeMin: parseFloat(document.getElementById('preheatTimeMin').value),
+            tariff: parseFloat(document.getElementById('electricityTariff').value),
+            mixerPower: parseFloat(document.getElementById('mixerPower').value),
+            mixingTimeMin: parseFloat(document.getElementById('mixingTimeMin').value),
+            rentAnnualPerSqm: parseFloat(document.getElementById('rentAnnualPerSqm').value),
+            areaSqm: parseFloat(document.getElementById('areaSqm').value),
+            depreciationMonth: parseFloat(document.getElementById('depreciationMonth').value),
+            utilitiesMonth: parseFloat(document.getElementById('utilitiesMonth').value),
+            laborRate: parseFloat(document.getElementById('laborRate').value),
+            laborHoursPerBatch: parseFloat(document.getElementById('laborHoursPerBatch').value),
+            bakersCount: parseFloat(document.getElementById('bakersCount').value),
+            insuranceRate: parseFloat(document.getElementById('insuranceRate').value)
+        };
+    }
+
+    function calculateCosts(p) {
+        const flourPerLoaf = 0.4697;
+        const flourPerBatch = p.loavesPerBatch * flourPerLoaf;
+        const flourCostBatch = flourPerBatch * p.flourPrice;
+        const saltPerBatch = (p.loavesPerBatch * 0.00955);
+        const saltCostBatch = saltPerBatch * p.saltPrice / 1000;
+
+        const mixingHours = p.mixingTimeMin / 60;
+        const mixerEnergy = p.mixerPower * mixingHours;
+        let cycles = Math.ceil(p.loavesPerBatch / p.loavesPerOvenLoad);
+        const bakingHoursPerCycle = p.bakingTimeMin / 60;
+        const preheatHours = p.preheatTimeMin / 60;
+        const preheatEnergyTotal = p.ovenPower * preheatHours;
+        let preheatPerBatch = p.batchesPerDay > 0 ? preheatEnergyTotal / p.batchesPerDay : 0;
+        const bakingEnergyPerCycle = p.ovenPower * bakingHoursPerCycle;
+        const totalBakingEnergyBatch = (bakingEnergyPerCycle * cycles) + preheatPerBatch;
+        const totalEnergyKwhBatch = mixerEnergy + totalBakingEnergyBatch;
+        const energyCostBatch = totalEnergyKwhBatch * p.tariff;
+
+        const variableCostBatch = flourCostBatch + saltCostBatch + energyCostBatch;
+        const variableCostPerLoaf = variableCostBatch / p.loavesPerBatch;
+
+        const rentMonth = (p.rentAnnualPerSqm * p.areaSqm) / 12;
+        const batchesPerMonth = p.batchesPerDay * p.workDaysMonth;
+        const totalLoavesMonth = batchesPerMonth * p.loavesPerBatch;
+        const laborHoursTotalMonth = p.laborHoursPerBatch * batchesPerMonth * p.bakersCount;
+        const laborCostMonthRaw = p.laborRate * laborHoursTotalMonth;
+        const insuranceCostMonth = laborCostMonthRaw * (p.insuranceRate / 100);
+        const totalLaborMonth = laborCostMonthRaw + insuranceCostMonth;
+        const fixedCostsMonth = rentMonth + totalLaborMonth + p.depreciationMonth + p.utilitiesMonth;
+        let fixedCostPerLoaf = 0, fixedCostPerBatch = 0;
+        if (totalLoavesMonth > 0) {
+            fixedCostPerLoaf = fixedCostsMonth / totalLoavesMonth;
+            fixedCostPerBatch = fixedCostsMonth / batchesPerMonth;
+        }
+
+        const doughFlourPerBatch = (p.loavesPerBatch / 11) * 4.5;
+        const starterFlourPerBatch = (p.loavesPerBatch / 11) * 0.667;
+        const waterPerBatch = (p.loavesPerBatch / 11) * 3.15;
+        const starterPerBatch = (p.loavesPerBatch / 11) * 1.0;
+
+        return {
+            flourPerBatch, flourCostBatch, saltCostBatch, energyCostBatch, variableCostBatch, variableCostPerLoaf,
+            batchesPerMonth, totalLoavesMonth, fixedCostsMonth, fixedCostPerLoaf, fixedCostPerBatch,
+            cycles, mixerEnergy, totalBakingEnergyBatch, totalEnergyKwhBatch,
+            doughFlourPerBatch, starterFlourPerBatch, waterPerBatch, starterPerBatch, saltPerBatch
+        };
+    }
+
+    async function aiUpdatePrice(vendorId, vendorGroup, vendorName) {
+        const oldPrice = vendorPrices[vendorId];
+        showToast(`🤖 Запрос к AI для ${vendorGroup} / ${vendorName}...`, 2000);
+        try {
+            const response = await fetch('/api/price', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ flourName: vendorGroup, vendorName: vendorName })
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Ошибка сервера');
+            }
+            const data = await response.json();
+            const newPrice = data.price;
+            if (newPrice && typeof newPrice === 'number' && newPrice > 0) {
+                vendorPrices[vendorId] = newPrice;
+                showToast(`✅ AI обновил цену для ${vendorGroup} / ${vendorName}: ${oldPrice} ₽ → ${newPrice} ₽`, 3000);
+                const select = document.getElementById('flourPreset');
+                if (select.value === vendorId) {
+                    document.getElementById('flourPrice').value = newPrice;
+                }
+                updateAllTables();
+                updateSelectOptions();
+            } else {
+                throw new Error('AI вернул некорректную цену');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast(`❌ Не удалось обновить цену: ${error.message}`, 4000);
+        }
+    }
+
+    function setActiveVendor(vendorId) {
+        const select = document.getElementById('flourPreset');
+        select.value = vendorId;
+        const price = vendorPrices[vendorId];
+        document.getElementById('flourPrice').value = price;
+        updateAllTables();
+        const vendor = vendors.find(v => v.id === vendorId);
+        showToast(`✅ Выбрана мука: ${vendor.group} / ${vendor.name} (${price} ₽/кг)`, 1200);
+    }
+
+    function updateSelectOptions() {
+        const select = document.getElementById('flourPreset');
+        const groups = {};
+        vendors.forEach(v => {
+            if (!groups[v.group]) groups[v.group] = [];
+            groups[v.group].push(v);
+        });
+        select.innerHTML = '';
+        for (const [groupName, vendorList] of Object.entries(groups)) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = groupName;
+            vendorList.forEach(v => {
+                const option = document.createElement('option');
+                option.value = v.id;
+                option.textContent = `${v.name} — ${vendorPrices[v.id]} ₽/кг`;
+                optgroup.appendChild(option);
+            });
+            select.appendChild(optgroup);
+        }
+        const customOpt = document.createElement('option');
+        customOpt.value = "custom";
+        customOpt.textContent = "🔧 Своя цена (ручной ввод)";
+        select.appendChild(customOpt);
+        if (select.value !== "custom" && !vendors.some(v => v.id === select.value)) {
+            select.value = "belon_opt_fs";
+            document.getElementById('flourPrice').value = vendorPrices["belon_opt_fs"];
+        } else if (select.value !== "custom" && select.value !== "custom") {
+            const price = vendorPrices[select.value];
+            if (price) document.getElementById('flourPrice').value = price;
+        }
+    }
+
+    function attachClickHandlers() {
+        const rows = document.querySelectorAll('#flourCostTable .clickable-row');
+        rows.forEach(row => {
+            const vendorId = row.getAttribute('data-vendor');
+            if (!vendorId) return;
+            row.removeEventListener('click', handleSingleClick);
+            row.removeEventListener('dblclick', handleDoubleClick);
+            row.addEventListener('click', handleSingleClick);
+            row.addEventListener('dblclick', handleDoubleClick);
+        });
+    }
+
+    function handleSingleClick(e) {
+        const row = e.currentTarget;
+        const vendorId = row.getAttribute('data-vendor');
+        if (vendorId) setActiveVendor(vendorId);
+    }
+
+    async function handleDoubleClick(e) {
+        const row = e.currentTarget;
+        const vendorId = row.getAttribute('data-vendor');
+        if (vendorId) {
+            const vendor = vendors.find(v => v.id === vendorId);
+            if (vendor) {
+                await aiUpdatePrice(vendorId, vendor.group, vendor.name);
+            }
+        }
+        e.stopPropagation();
+    }
+
+    function updateAllTables() {
+        const p = getParams();
+        const costs = calculateCosts(p);
+
+        const rawDoughWeightBatch = p.loavesPerBatch * 0.796;
+        const finalWeightBatch = rawDoughWeightBatch * 0.922;
+        document.getElementById('controlSheetTable').innerHTML = `<thead><tr><th>Показатель</th><th>На 1 партию (${p.loavesPerBatch} бух.)</th><th>На месяц (${costs.batchesPerMonth} партий)</th></tr></thead><tbody>
+            <tr><td>Вес сырого теста (кг)</td><td>${rawDoughWeightBatch.toFixed(2)}</td><td>${(rawDoughWeightBatch * costs.batchesPerMonth).toFixed(2)}</td></tr>
+            <tr><td>Вес готового хлеба (кг)</td><td>${finalWeightBatch.toFixed(2)}</td><td>${(finalWeightBatch * costs.batchesPerMonth).toFixed(2)}</td></tr>
+            <tr><td>Количество буханок</td><td>${p.loavesPerBatch}</td><td>${costs.totalLoavesMonth}</td></tr>
+            <tr><td>Средний вес 1 буханки (г)</td><td>734</td><td>734</td></tr>
+            <tr><td>Уварка (%)</td><td>7.8%</td><td>7.8%</td></tr>
+            <tr><td>Затраты на ингредиенты (руб)</td><td>${(costs.flourCostBatch + costs.saltCostBatch).toFixed(2)}</td><td>${((costs.flourCostBatch + costs.saltCostBatch) * costs.batchesPerMonth).toFixed(2)}</td></tr>
+            <tr><td>Затраты на электроэнергию (руб)</td><td>${costs.energyCostBatch.toFixed(2)}</td><td>${(costs.energyCostBatch * costs.batchesPerMonth).toFixed(2)}</td></tr>
+            <tr><td><strong>Переменные затраты (руб)</strong></td><td><strong>${costs.variableCostBatch.toFixed(2)}</strong></td><td><strong>${(costs.variableCostBatch * costs.batchesPerMonth).toFixed(2)}</strong></td></tr>
+        </tbody>`;
+
+        document.getElementById('techEnergyTable').innerHTML = `<thead><tr><th>Процесс</th><th>На партию</th><th>На месяц</th></tr></thead><tbody>
+            <tr><td>Замес (кВт·ч)</td><td>${costs.mixerEnergy.toFixed(3)}</td><td>${(costs.mixerEnergy * costs.batchesPerMonth).toFixed(1)}</td></tr>
+            <tr><td>Выпечка + разогрев (кВт·ч)</td><td>${costs.totalBakingEnergyBatch.toFixed(3)}</td><td>${(costs.totalBakingEnergyBatch * costs.batchesPerMonth).toFixed(1)}</td></tr>
+            <tr><td><strong>Итого энергия (кВт·ч)</strong></td><td><strong>${costs.totalEnergyKwhBatch.toFixed(3)}</strong></td><td><strong>${(costs.totalEnergyKwhBatch * costs.batchesPerMonth).toFixed(1)}</strong></td></tr>
+            <tr><td>Стоимость энергии (руб)</td><td>${costs.energyCostBatch.toFixed(2)}</td><td>${(costs.energyCostBatch * costs.batchesPerMonth).toFixed(2)}</td></tr>
+        </tbody>`;
+
+        const laborCostPerBatchRaw = p.laborRate * p.laborHoursPerBatch * p.bakersCount;
+        const laborCostPerBatchIns = laborCostPerBatchRaw * (p.insuranceRate / 100);
+        document.getElementById('laborFullTable').innerHTML = `<thead><tr><th>Статья</th><th>Сумма (руб)</th></tr></thead><tbody>
+            <tr><td>Оплата труда (без налогов)</td><td>${laborCostPerBatchRaw.toFixed(2)}</td></tr>
+            <tr><td>Страховые взносы (${p.insuranceRate}%)</td><td>${laborCostPerBatchIns.toFixed(2)}</td></tr>
+            <tr><td><strong>Всего труд с налогами</strong></td><td><strong>${(laborCostPerBatchRaw + laborCostPerBatchIns).toFixed(2)}</strong></td></tr>
+            <tr><td>Труд на 1 буханку</td><td>${((laborCostPerBatchRaw + laborCostPerBatchIns) / p.loavesPerBatch).toFixed(2)}</td></tr>
+        </tbody>`;
+
+        const totalIngredientsBatch = costs.flourCostBatch + costs.saltCostBatch;
+        const totalLaborBatch = laborCostPerBatchRaw + laborCostPerBatchIns;
+        const fullCostBatch = totalIngredientsBatch + costs.energyCostBatch + totalLaborBatch;
+        const percentIngredients = (totalIngredientsBatch / fullCostBatch * 100).toFixed(1);
+        const percentEnergy = (costs.energyCostBatch / fullCostBatch * 100).toFixed(1);
+        const percentLabor = (totalLaborBatch / fullCostBatch * 100).toFixed(1);
+        document.getElementById('fullCostSummaryTable').innerHTML = `<thead><tr><th>Статья затрат</th><th>Сумма (руб)</th><th>% от полной</th></tr></thead><tbody>
+            <tr><td>Ингредиенты (мука, соль)</td><td>${totalIngredientsBatch.toFixed(2)}</td><td>${percentIngredients}%</td></tr>
+            <tr><td>Электроэнергия + вода</td><td>${costs.energyCostBatch.toFixed(2)}</td><td>${percentEnergy}%</td></tr>
+            <tr><td>Оплата труда (с налогами)</td><td>${totalLaborBatch.toFixed(2)}</td><td>${percentLabor}%</td></tr>
+            <tr><td><strong>Итого полная себестоимость партии</strong></td><td><strong>${fullCostBatch.toFixed(2)}</strong></td><td>100%</td></tr>
+            <tr><td><strong>Полная себестоимость 1 буханки</strong></td><td colspan="2"><strong>${(fullCostBatch / p.loavesPerBatch).toFixed(2)} ₽</strong></td></tr>
+        </tbody>`;
+
+        const doughFlourPerBatch = costs.doughFlourPerBatch;
+        const starterFlourPerBatch = costs.starterFlourPerBatch;
+        const waterPerBatch = costs.waterPerBatch;
+        const starterPerBatch = costs.starterPerBatch;
+        const saltPerBatchDet = costs.saltPerBatch;
+        const batchesPerMonth = costs.batchesPerMonth;
+
+        document.getElementById('ingredientsTable').innerHTML = `<thead><tr><th>Ингредиент</th><th>На 1 партию (${p.loavesPerBatch} бух.)</th><th>На месяц (${batchesPerMonth} партий)</th></tr></thead><tbody>
+            <tr><td>Мука в тесто (кг)</td><td>${doughFlourPerBatch.toFixed(2)}</td><td>${(doughFlourPerBatch * batchesPerMonth).toFixed(2)}</td></tr>
+            <tr><td>Вода (л)</td><td>${waterPerBatch.toFixed(2)}</td><td>${(waterPerBatch * batchesPerMonth).toFixed(2)}</td></tr>
+            <tr><td>Соль (кг)</td><td>${saltPerBatchDet.toFixed(3)}</td><td>${(saltPerBatchDet * batchesPerMonth).toFixed(3)}</td></tr>
+            <tr><td>Закваска Massa Madre (кг)</td><td>${starterPerBatch.toFixed(2)}</td><td>${(starterPerBatch * batchesPerMonth).toFixed(2)}</td></tr>
+            <tr><td>Мука для поддержания закваски (кг)</td><td>${starterFlourPerBatch.toFixed(2)}</td><td>${(starterFlourPerBatch * batchesPerMonth).toFixed(2)}</td></tr>
+        </tbody>`;
+
+        document.getElementById('bakingParamsTable').innerHTML = `<tbody>
+            <tr><td>Вес сырого теста на 1 буханку</td><td>796 г</td></tr>
+            <tr><td>Вес готового хлеба (1 шт)</td><td>726–742 г (сред. 734 г)</td></tr>
+            <tr><td>Температура выпечки (закладка ${p.loavesPerOvenLoad} шт)</td><td>235 °C</td></tr>
+            <tr><td>Время выпечки</td><td>35 мин (первые 10 мин с паром)</td></tr>
+            <tr><td>Форма выпечки</td><td>закрытые (пульманы) или фольга</td></tr>
+        </tbody>`;
+
+        document.getElementById('techProcessTable').innerHTML = `<tbody>
+            <tr><td>Активация закваски</td><td>6–8 ч при 24–26 °C</td></tr>
+            <tr><td>Замес</td><td>автолиз 30 мин + замес 15 мин</td></tr>
+            <tr><td>Ферментация</td><td>3 ч при 24–26 °C, обминки 3 раза</td></tr>
+            <tr><td>Деление и формовка</td><td>отдых 20 мин</td></tr>
+            <tr><td>Расстойка</td><td>2 ч при 24–26 °C</td></tr>
+            <tr><td>Выпечка</td><td>35 мин при 235 °C (для 3 буханок)</td></tr>
+            <tr><td>Остывание</td><td>2–3 ч на решётке</td></tr>
+        </tbody>`;
+
+        document.getElementById('qualityTable').innerHTML = `<tbody>
+            <tr><td>Температура теста после замеса</td><td>24–26 °C</td></tr>
+            <tr><td>Влажность в расстойке</td><td>накрыто, нет корочки</td></tr>
+            <tr><td>Увеличение теста при расстойке</td><td>в 1,5–1,7 раза</td></tr>
+            <tr><td>Внутренняя температура хлеба</td><td>94–96 °C</td></tr>
+            <tr><td>Вес готовой буханки</td><td>726–742 г</td></tr>
+        </tbody>`;
+
+        document.getElementById('equipmentTable').innerHTML = `<tbody>
+            <tr><td>Тестомес спиральный</td><td>SUNMIX, дежа 12 кг</td></tr>
+            <tr><td>Печь хлебопекарная</td><td>с паром, макс. 300 °C</td></tr>
+            <tr><td>Формы для выпечки</td><td>пульманы с крышкой (или фольга)</td></tr>
+            <tr><td>Расстойные корзины</td><td>опционально</td></tr>
+            <tr><td>Весы, термощуп</td><td>точность до 1 г, 0–150 °C</td></tr>
+        </tbody>`;
+
+        let tableRows = '';
+        vendors.forEach(v => {
+            tableRows += `<tr id="row_${v.id}" data-vendor="${v.id}" data-name="${v.group} / ${v.name}" class="clickable-row">
+                <td>${v.group}<br><span style="font-size:0.8rem;">${v.name}</span></td>
+                <td>${vendorPrices[v.id]} ₽/кг</td>
+            </table>`;
+        });
+        tableRows += `<tr><td><strong>Текущая выбранная цена</strong></td><td><strong>${p.flourPrice} ₽/кг</strong></td></tr>`;
+        document.getElementById('flourCostTable').innerHTML = `<tbody>${tableRows}</tbody>`;
+        attachClickHandlers();
+
+        const flourCostBatchMain = doughFlourPerBatch * p.flourPrice;
+        const starterFlourCostBatch = starterFlourPerBatch * p.flourPrice;
+        const saltCostBatchCalc = saltPerBatchDet * p.saltPrice;
+        document.getElementById('ingredientsCostTable').innerHTML = `<tbody>
+            <tr><td>Мука в тесто (на партию)</td><td>${flourCostBatchMain.toFixed(2)} ₽</td><td>${(flourCostBatchMain * batchesPerMonth).toFixed(2)} ₽</td></tr>
+            <tr><td>Мука на закваску (на партию)</td><td>${starterFlourCostBatch.toFixed(2)} ₽</td><td>${(starterFlourCostBatch * batchesPerMonth).toFixed(2)} ₽</td></tr>
+            <tr><td>Соль (на партию)</td><td>${saltCostBatchCalc.toFixed(2)} ₽</td><td>${(saltCostBatchCalc * batchesPerMonth).toFixed(2)} ₽</td></tr>
+            <tr><td><strong>Итого ингредиенты</strong></td><td><strong>${(flourCostBatchMain + starterFlourCostBatch + saltCostBatchCalc).toFixed(2)} ₽</strong></td><td><strong>${((flourCostBatchMain + starterFlourCostBatch + saltCostBatchCalc) * batchesPerMonth).toFixed(2)} ₽</strong></td></tr>
+        </tbody>`;
+
+        document.getElementById('starterCostTable').innerHTML = `<tbody>
+            <tr><td>Расход закваски на партию</td><td>${starterPerBatch.toFixed(2)} кг</td><td>${(starterPerBatch * batchesPerMonth).toFixed(2)} кг</td></tr>
+            <tr><td>Муки в закваске (гидратация 50%)</td><td>${starterFlourPerBatch.toFixed(2)} кг</td><td>${(starterFlourPerBatch * batchesPerMonth).toFixed(2)} кг</td></tr>
+            <tr><td>Затраты на муку для закваски (партия)</td><td>${starterFlourCostBatch.toFixed(2)} ₽</td><td>${(starterFlourCostBatch * batchesPerMonth).toFixed(2)} ₽</td></tr>
+        </tbody>`;
+
+        document.getElementById('shrinkageTable').innerHTML = `<tbody>
+            <tr><td>Вес сырого теста (1 буханка)</td><td>796 г</td></tr>
+            <tr><td>Вес готового хлеба (1 буханка)</td><td>734 г (среднее)</td></tr>
+            <tr><td><strong>Уварка, %</strong></td><td><strong>7.8%</strong></td></tr>
+            <tr><td>Уварка (партия)</td><td>${(100 - 734/796*100).toFixed(1)}%</td></tr>
+        </tbody>`;
+    }
+
+    const selectEl = document.getElementById('flourPreset');
+    selectEl.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            // leave current price
+        } else {
+            const price = vendorPrices[this.value];
+            if (price) document.getElementById('flourPrice').value = price;
+        }
+        updateAllTables();
+    });
+    const priceInputEl = document.getElementById('flourPrice');
+    priceInputEl.addEventListener('input', function() {
+        if (selectEl.value !== 'custom') {
+            selectEl.value = 'custom';
+        }
+        updateAllTables();
+    });
+    const allInputs = document.querySelectorAll('input, select');
+    allInputs.forEach(el => {
+        if (el.id !== 'flourPreset' && el.id !== 'flourPrice') {
+            el.addEventListener('input', updateAllTables);
+            el.addEventListener('change', updateAllTables);
+        }
+    });
+
+    updateSelectOptions();
+    updateAllTables();
+</script>
+</body>
+</html>
