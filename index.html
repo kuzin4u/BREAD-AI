@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Хлеб на Massa Madre – полная модель с таблицами 1-9 и сохранением</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #fef3e4;
+            margin: 0;
+            padding: 20px;
+            color: #2c2418;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+            padding: 20px 24px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-top: 0;
+            color: #b35f1b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        h1:hover { opacity: 0.8; }
+        h1 small { font-size: 0.8rem; background: #f0e2d0; padding: 4px 12px; border-radius: 40px; font-weight: normal; }
+        .button-group { display: flex; gap: 10px; }
+        .help-button, .print-button {
+            background: #d48c3c; border: none; color: white; width: 44px; height: 44px; border-radius: 50%;
+            cursor: pointer; font-weight: bold; font-size: 1.5rem; display: inline-flex;
+            align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            transition: 0.2s;
+        }
+        .help-button:hover, .print-button:hover { background: #b8722a; transform: scale(1.05); }
+        .info-note {
+            background: #f9efdf; padding: 12px 18px; border-radius: 28px; margin: 15px 0 5px;
+            font-size: 0.9rem; border-left: 4px solid #d48c3c;
+        }
+        h2 { font-size: 1.3rem; border-left: 5px solid #d48c3c; padding-left: 15px; margin: 1.5rem 0 1rem 0; color: #4a2e14; }
+        h3 { font-size: 1.1rem; margin: 0.8rem 0 0.5rem; color: #6b4423; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: #fffaf2;
+            border-radius: 24px;
+            padding: 16px 20px;
+            border: 1px solid #f0e2d0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+        .param-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 14px;
+            gap: 8px;
+            position: relative;
+        }
+        .param-row label { font-weight: 600; flex: 1 1 180px; font-size: 0.9rem; }
+        .param-row input, .param-row select {
+            flex: 2 1 160px; padding: 8px 12px; border-radius: 48px;
+            border: 1px solid #d9c2a4; background: white; font-size: 0.9rem;
+        }
+        .param-row input:disabled { background: #f3ede6; cursor: not-allowed; }
+        .param-row .field-help {
+            cursor: help; font-size: 1rem; font-weight: bold; color: #b35f1b;
+            background: #f0e2d0; width: 22px; height: 22px; display: inline-flex;
+            align-items: center; justify-content: center; border-radius: 50%; margin-left: 4px;
+        }
+        .tooltip-text {
+            visibility: hidden; width: 220px; background-color: #2c2418; color: #fff;
+            text-align: center; border-radius: 8px; padding: 6px 10px; position: absolute;
+            z-index: 10; bottom: 125%; left: 50%; margin-left: -110px; font-size: 0.75rem;
+            opacity: 0; transition: opacity 0.2s; pointer-events: none;
+        }
+        .param-row:hover .tooltip-text { visibility: visible; opacity: 0.9; }
+        .results {
+            background: #f2e6d8;
+            border-radius: 28px;
+            padding: 20px 24px;
+            margin-top: 24px;
+        }
+        .result-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+        }
+        .result-card {
+            background: white; border-radius: 24px; padding: 16px 20px;
+            flex: 1; min-width: 180px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .result-card .label { font-size: 0.8rem; text-transform: uppercase; color: #8b694a; letter-spacing: 1px; }
+        .result-card .value { font-size: 2.2rem; font-weight: 800; color: #4a2e14; line-height: 1.2; }
+        table {
+            width: 100%; border-collapse: collapse; background: white; border-radius: 20px;
+            overflow: hidden; margin-top: 15px; font-size: 0.9rem;
+        }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ebddce; }
+        th { background: #e7d8c6; }
+        .clickable-row { cursor: pointer; transition: background 0.1s; }
+        .clickable-row:hover { background: #f9efdf; }
+        .editable-cell { background-color: #fffef7; cursor: text; }
+        .editable-cell:focus { outline: 2px solid #d48c3c; background-color: white; }
+        details {
+            background: #fffaf2;
+            border-radius: 24px;
+            margin-top: 20px;
+            padding: 10px 15px;
+            border: 1px solid #f0e2d0;
+        }
+        summary { font-weight: bold; font-size: 1.05rem; cursor: pointer; color: #b35f1b; }
+        footer { margin-top: 30px; font-size: 0.75rem; text-align: center; color: #bb9f7e; border-top: 1px solid #eedfcb; padding-top: 20px; }
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);
+        }
+        .modal-content {
+            background-color: #fef7e6; margin: 5% auto; padding: 20px 30px;
+            border-radius: 32px; width: 90%; max-width: 700px; max-height: 80vh; overflow-y: auto;
+            color: #2c2418;
+        }
+        .close-modal { color: #b35f1b; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-modal:hover { color: #7a3e0e; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .container { box-shadow: none; padding: 10px; max-width: 100%; }
+            .button-group, .help-button, .print-button, .info-note, .field-help, .tooltip-text, .modal, .clickable-row:hover, .param-row .field-help, .param-row .tooltip-text { display: none !important; }
+            .card, .results, table, details { break-inside: avoid; page-break-inside: avoid; }
+            .param-row input, .param-row select { border: none; background: transparent; padding: 0; font-size: 0.9rem; color: black; }
+            .param-row label { font-weight: bold; }
+            .editable-cell { background: transparent; border: none; }
+            .result-card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+            a { text-decoration: none; color: black; }
+        }
+        @media (max-width: 700px) {
+            .result-card .value { font-size: 1.5rem; }
+            .param-row label { flex-basis: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 id="resetDefaultsBtn">
+        🍞 Калькулятор хлеба на Massa Madre 
+        <small>рецепт 4,5 кг муки → 11 буханок ≈ 734 г</small>
+        <div class="button-group">
+            <button class="print-button" id="printBtn" title="Распечатать">🖨️</button>
+            <button class="help-button" id="openHelpBtn">?</button>
+        </div>
+    </h1>
+    <div class="info-note">
+        💡 <strong>Подсказка:</strong> Двойной клик по любой строке <strong>Таблицы 6</strong> → AI-ассистент.<br>
+        🔧 <strong>Изменяемые параметры:</strong> мука, объём, печь, аренда, зарплата, розничная цена хлеба.<br>
+        🔄 <strong>Двойной клик по заголовку</strong> → восстановить предустановленные параметры.<br>
+        🛒 <strong>Магазины муки:</strong> двойной клик по строке → поиск цены в Яндексе.<br>
+        🥖 <strong>Розничные цены на хлеб:</strong> двойной клик по строке → поиск цены в Яндексе.<br>
+        💾 <strong>Автосохранение:</strong> все настройки сохраняются в браузере.
+    </div>
+
+    <!-- Блок управляемых параметров -->
+    <div class="grid">
+        <div class="card">
+            <h3>🌾 Мука</h3>
+            <div class="param-row"><label>Тип муки</label><select id="flourType"><option value="french">Французская штучка</option><option value="belon">Белонежная</option></select></div>
+            <div class="param-row"><label>Магазин / поставщик</label><select id="shopSelect"></select></div>
+            <div class="param-row"><label>Цена муки (руб/кг)</label><input type="number" id="flourPrice" step="0.5" readonly disabled style="background:#f3ede6;"></div>
+            <div class="param-row"><label>Расход муки на 1 буханку (кг)</label><input type="number" id="flourPerLoaf" value="0.4697" readonly disabled></div>
+        </div>
+        <div class="card">
+            <h3>📦 Объём производства</h3>
+            <div class="param-row"><label>Буханок в одном замесе</label><input type="number" id="loavesPerBatch" value="11" step="1" min="1"></div>
+            <div class="param-row"><label>Буханок в закладке (в печь)</label><input type="number" id="loavesPerOvenLoad" value="3" step="1" min="1"></div>
+            <div class="param-row"><label>Замесов в день</label><input type="number" id="batchesPerDay" value="1" step="0.5" min="0.5"></div>
+            <div class="param-row"><label>Рабочих дней в месяц</label><input type="number" id="workDaysMonth" value="22" step="1" min="1"></div>
+        </div>
+        <div class="card">
+            <h3>🔥 Печь и энергия</h3>
+            <div class="param-row"><label>Мощность печи (кВт)</label><input type="number" id="ovenPower" value="4.0" step="0.2"></div>
+            <div class="param-row"><label>Время выпечки 1 закладки (мин)</label><input type="number" id="bakingTimeMin" value="35" step="1"></div>
+            <div class="param-row"><label>Разогрев печи (мин/день)</label><input type="number" id="preheatTimeMin" value="15" step="1"></div>
+            <div class="param-row"><label>Тариф э/э (руб/кВт·ч)</label><input type="number" id="electricityTariff" value="6.29" step="0.1"></div>
+            <div class="param-row"><label>Мощность тестомеса (кВт)</label><input type="number" id="mixerPower" value="1.5" step="0.2"></div>
+            <div class="param-row"><label>Время замеса (мин)</label><input type="number" id="mixingTimeMin" value="15" step="1"></div>
+        </div>
+        <div class="card">
+            <h3>🏢 Постоянные расходы</h3>
+            <div class="param-row"><label>Аренда (руб/м² в год)</label><input type="number" id="rentAnnualPerSqm" value="13500" step="500"></div>
+            <div class="param-row"><label>Площадь (м²)</label><input type="number" id="areaSqm" value="20" step="1"></div>
+            <div class="param-row"><label>Амортизация (руб/мес)</label><input type="number" id="depreciationMonth" value="5354" step="100"></div>
+            <div class="param-row"><label>Коммунальные услуги (руб/мес)</label><input type="number" id="utilitiesMonth" value="5000" step="500"></div>
+        </div>
+        <div class="card">
+            <h3>👨‍🍳 Персонал</h3>
+            <div class="param-row"><label>Ставка пекаря (руб/час)</label><input type="number" id="laborRate" value="300" step="10"></div>
+            <div class="param-row"><label>Время на одну партию (часы)</label><input type="number" id="laborHoursPerBatch" value="3.5" step="0.25"></div>
+            <div class="param-row"><label>Количество пекарей</label><input type="number" id="bakersCount" value="1" step="0.5" min="0.5"></div>
+            <div class="param-row"><label>Страховые взносы (% от ФОТ)</label><input type="number" id="insuranceRate" value="30.2" step="0.5"></div>
+        </div>
+        <div class="card">
+            <h3>💰 Розничная цена "Massa Vika4"</h3>
+            <div class="param-row"><label>Цена за буханку 740 г (руб)</label><input type="number" id="retailPrice" value="200" step="5" min="0"></div>
+        </div>
+    </div>
+
+    <!-- Таблица розничных цен на хлеб -->
+    <details open>
+        <summary>🏪 Таблица розничных цен на хлеб Massa Madre (буханка 740 г)</summary>
+        <table id="retailPricesTable">
+            <thead><tr><th>Пекарня / бренд</th><th>Цена за буханку 740 г (руб)</th><th>Примечание</th></tr></thead>
+            <tbody>
+                <tr><td class="clickable-row" data-search="https://yandex.ru/search/?text=хлеб+Massa+Madre+цена+буханка+740г">Massa Madre (известная пекарня)</td><td class="editable-cell" contenteditable="true" id="priceMassaMadre">320</td><td>премиум-сегмент</td></tr>
+                <tr><td class="clickable-row" data-search="https://yandex.ru/search/?text=хлеб+Хоккайдо+цена+буханка+740г">Хлеб Хоккайдо</td><td class="editable-cell" contenteditable="true" id="priceHokkaido">280</td><td>японский молочный хлеб</td></tr>
+                <tr><td class="clickable-row" data-search="https://yandex.ru/search/?text=хлеб+домашний+пекарня+цена+740г">Домашний хлеб (сетевая пекарня)</td><td class="editable-cell" contenteditable="true" id="priceHome">190</td><td>доступная цена</td></tr>
+                <tr><td class="clickable-row" data-search="https://yandex.ru/search/?text=пекарня+Зерно+хлеб+цена+740г">Пекарня "Зерно"</td><td class="editable-cell" contenteditable="true" id="priceZerno">210</td><td>региональная сеть</td></tr>
+                <tr><td class="clickable-row" data-search="https://yandex.ru/search/?text=хлеб+Ржаной+Колос+цена+740г">Хлебная лавка "Ржаной Колос"</td><td class="editable-cell" contenteditable="true" id="priceRzhanoi">175</td><td>эконом-сегмент</td></tr>
+                <tr><td><strong>Massa Vika4 (наш хлеб)</strong></td><td><span id="ourPriceDisplay">—</span> ₽</td><td>цена из параметра выше</td></tr>
+            </tbody>
+        </table>
+        <p><em>✏️ Редактируйте цены кликом по ячейке. Двойной клик по названию пекарни → поиск цены в Яндексе.</em></p>
+    </details>
+
+    <!-- Таблица магазинов муки -->
+    <details open>
+        <summary>🛒 Таблица магазинов муки – двойной клик → поиск цены в Яндексе</summary>
+        <table id="shopsTable">
+            <thead><tr><th>Магазин</th><th>Французская штучка (руб/кг)</th><th>Белонежная (руб/кг)</th><th>Тип</th></tr></thead>
+            <tbody id="shopsTableBody"></tbody>
+        </table>
+        <p><em>✏️ Редактируйте цены кликом по ячейке. Двойной клик по строке откроет поиск Яндекса.</em></p>
+    </details>
+
+    <!-- Результаты (динамические) -->
+    <div class="results">
+        <h2>📈 Себестоимость, выручка и EBITDA</h2>
+        <div class="result-grid">
+            <div class="result-card"><div class="label">Полная себестоимость</div><div class="value" id="costPerLoaf">— ₽</div><div class="sub">за 1 буханку</div></div>
+            <div class="result-card"><div class="label">Переменные затраты</div><div class="value" id="varCostPerLoaf">— ₽</div><div class="sub">мука + энергия</div></div>
+            <div class="result-card"><div class="label">Постоянные затраты</div><div class="value" id="fixCostPerLoaf">— ₽</div><div class="sub">на 1 буханку</div></div>
+            <div class="result-card"><div class="label">Розничная цена (Vika4)</div><div class="value" id="displayRetailPrice">— ₽</div><div class="sub">за буханку</div></div>
+        </div>
+        <div class="result-grid" style="margin-top: 20px;">
+            <div class="result-card"><div class="label">Выручка в месяц</div><div class="value" id="monthlyRevenue">— ₽</div><div class="sub">от продажи всего объёма</div></div>
+            <div class="result-card"><div class="label">Полные затраты в месяц</div><div class="value" id="totalMonthCost">— ₽</div><div class="sub">переменные + постоянные</div></div>
+            <div class="result-card"><div class="label">EBITDA (прибыль до налогов)</div><div class="value" id="ebitda">— ₽</div><div class="sub">за месяц</div></div>
+        </div>
+
+        <h3>🔎 Таблица 6 – Детализация на один замес (партию)</h3>
+        <table id="detailTable">
+            <thead><tr><th>Показатель</th><th>Значение</th></tr></thead>
+            <tbody>
+                <tr><td>Буханок в замесе</td><td id="detLoaves">—</td></tr>
+                <tr><td>Расход муки на партию (кг)</td><td id="detFlour">—</td></tr>
+                <tr><td>Затраты на муку (руб)</td><td id="detFlourCost">—</td></tr>
+                <tr><td>Энергия замеса (кВт·ч)</td><td id="detMixEnergy">—</td></tr>
+                <tr><td>Энергия выпечки (кВт·ч)</td><td id="detBakeEnergy">—</td></tr>
+                <tr><td>Итого энергозатрат на партию (руб)</td><td id="detEnergyCost">—</td></tr>
+                <tr><td>Переменные затраты на партию (руб)</td><td id="detVarCost">—</td></tr>
+                <tr><td>Постоянные затраты на 1 партию (руб)*</td><td id="detFixPerBatch">—</td></tr>
+                <tr><td>Циклов выпечки на замес</td><td id="detCycles">—</td></tr>
+                <tr><td>Партий (замесов) в месяц</td><td id="detBatchesMonth">—</td></tr>
+                <tr><td>Выработка (буханок в месяц)</td><td id="detTotalLoavesMonth">—</td></tr>
+                <tr><td>Месячный фонд оплаты труда (с налогами)</td><td id="detLaborMonth">—</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ЗАПОЛНЕННЫЕ ТАБЛИЦЫ 1-9 -->
+    <details><summary>📋 1. Таблица ингредиентов (фиксированный рецепт на 11 буханок)</summary>
+        <table><thead><tr><th>Ингредиент</th><th>Вес (г)</th><th>Вес (кг)</th><th>Примечание</th></tr></thead>
+        <tbody><tr><td>Мука пшеничная в/с</td><td>4 500</td><td>4,5</td><td>сильная, белок 12–13%</td></tr>
+        <tr><td>Вода (18–20 °C)</td><td>3 150</td><td>3,15</td><td>питьевая</td></tr>
+        <tr><td>Соль</td><td>105</td><td>0,105</td><td>морская/каменная</td></tr>
+        <tr><td>Massa Madre (закваска 50%)</td><td>1 000</td><td>1,0</td><td>активирована за 6–8 ч</td></tr>
+        <tr><td><strong>Итого теста</strong></td><td><strong>8 755</strong></td><td><strong>8,755</strong></td><td></td></tr>
+        </tbody></table>
+        <p><strong>Выход готового хлеба:</strong> 11 буханок по 726–742 г (сред. 734 г). Уварка 7,8%.</p>
+    </details>
+
+    <details><summary>🔥 2. Параметры выпечки (закладка 3 буханки)</summary>
+        <table><tr><th>Параметр</th><th>Значение</th></tr>
+        <tr><td>Вес сырого теста на 1 буханку</td><td>796 г</td></tr>
+        <tr><td>Вес готового хлеба (1 шт)</td><td>726–742 г</td></tr>
+        <tr><td>Температура выпечки (для 3 шт)</td><td>235 °C</td></tr>
+        <tr><td>Время выпечки</td><td>35 мин (первые 10 мин с паром)</td></tr>
+        <tr><td>Пар</td><td>обильно в начале, выпустить через 10 мин</td></tr>
+        <tr><td>Форма выпечки</td><td>закрытые (пульманы) или плотно накрытые фольгой</td></tr>
+        </table>
+        <p><em>Для полной загрузки 11 буханок температура – 250 °C, время то же.</em></p>
+    </details>
+
+    <details><summary>⚙️ 3. Технологический процесс</summary>
+        <table><thead><tr><th>Операция</th><th>Время</th><th>Температура</th><th>Примечание</th></tr></thead>
+        <tbody><tr><td>Активация закваски</td><td>6–8 ч</td><td>24–26 °C</td><td>200 г старой + 400 г муки + 400 г воды</td></tr>
+        <tr><td>Замес – загрузка</td><td>1 мин</td><td>вода 18°C</td><td>сначала жидкость</td></tr>
+        <tr><td>Перемешивание (1‑я скорость)</td><td>2 мин</td><td>–</td><td>до увлажнения</td></tr>
+        <tr><td>Автолиз</td><td>30 мин</td><td>24–26°C</td><td>накрыть плёнкой</td></tr>
+        <tr><td>Добавить соль</td><td>–</td><td>–</td><td>равномерно</td></tr>
+        <tr><td>Замес (1‑я скорость)</td><td>5–6 мин</td><td>–</td><td>тесто в шар</td></tr>
+        <tr><td>Финальный замес (2‑я скорость)</td><td>8–10 мин</td><td>–</td><td>гладкое, отходит от стенок</td></tr>
+        <tr><td>Контроль температуры теста</td><td>–</td><td>24–26°C</td><td>щупом</td></tr>
+        <tr><td>Ферментация</td><td>3 ч</td><td>24–26°C</td><td>обминки через 45, 90, 135 мин</td></tr>
+        <tr><td>Деление на 11 кусков по 796 г</td><td>5–7 мин</td><td>24°C</td><td>стол подпылён</td></tr>
+        <tr><td>Подкатка в шары</td><td>10–12 мин</td><td>24°C</td><td>слегка</td></tr>
+        <tr><td>Отдых (bench rest)</td><td>20 мин</td><td>24°C</td><td>накрыть плёнкой</td></tr>
+        <tr><td>Окончательная формовка</td><td>10–15 мин</td><td>24°C</td><td>батоны / кругляши</td></tr>
+        <tr><td>Расстойка</td><td>2 ч</td><td>24–26°C</td><td>увеличение в 1,5–1,7 раза</td></tr>
+        <tr><td>Выпечка (на 3 буханки)</td><td>35 мин</td><td>235°C</td><td>пар первые 10 мин</td></tr>
+        <tr><td>Остывание</td><td>2–3 ч</td><td>20–22°C</td><td>на решётке, не накрывать</td></tr>
+        </tbody></table>
+    </details>
+
+    <details><summary>📋 4. Контрольные точки качества</summary>
+        <table><thead><tr><th>Что проверять</th><th>Норма / Критерий</th><th>Периодичность</th></tr></thead>
+        <tbody><tr><td>Температура теста после замеса</td><td>24–26 °C</td><td>каждый замес</td></tr>
+        <tr><td>Влажность в расстойке</td><td>накрыто, нет корочки</td><td>визуально</td></tr>
+        <tr><td>Увеличение теста при расстойке</td><td>в 1,5–1,7 раза</td><td>перед выпечкой</td></tr>
+        <tr><td>Внутренняя температура хлеба</td><td>94–96 °C</td><td>первая партия</td></tr>
+        <tr><td>Вес готовой буханки</td><td>726–742 г</td><td>контроль 2–3 шт</td></tr>
+        </tbody></table>
+    </details>
+
+    <details><summary>🛠️ 5. Оборудование и инвентарь</summary>
+        <table><tr><th>Наименование</th><th>Параметры</th></tr>
+        <tr><td>Тестомес спиральный</td><td>Sunmix, дежа 12 кг</td></tr>
+        <tr><td>Печь хлебопекарная</td><td>с паром, макс. 300 °C</td></tr>
+        <tr><td>Формы для выпечки</td><td>пульманы с крышкой (или фольга)</td></tr>
+        <tr><td>Расстойные корзины</td><td>опционально</td></tr>
+        <tr><td>Весы</td><td>точность до 1 г</td></tr>
+        <tr><td>Термощуп (пирометр)</td><td>0–150 °C</td></tr>
+        </table>
+    </details>
+
+    <details><summary>⚡ 6. Энергозатраты (тариф 6,29 руб/кВт·ч) на 11 буханок</summary>
+        <table id="energyCostsTable"><thead><tr><th>Процесс</th><th>кВт·ч</th><th>Стоимость (руб)</th></tr></thead>
+        <tbody><tr><td>Замес</td><td>0,375</td><td id="energyMixCost">—</td></tr>
+        <tr><td>Разогрев печи</td><td>1,0</td><td id="energyPreheatCost">—</td></tr>
+        <tr><td>Выпечка (4 закладки)</td><td>9,333</td><td id="energyBakeCost">—</td></tr>
+        <tr><td><strong>Итого электроэнергия + вода</strong></td><td><strong>10,708</strong></td><td id="energyTotalCost">—</td></tr>
+        </tbody></table>
+        <p><em>Значения пересчитываются при изменении тарифа и параметров печи.</em></p>
+    </details>
+
+    <details><summary>💰 7. Переменные затраты на 11 буханок (ингредиенты + энергия)</summary>
+        <table id="varCostsTable"><thead><tr><th>Мука</th><th>Ингредиенты (руб)</th><th>Энергия (руб)</th><th>Итого переменные (руб)</th></tr></thead>
+        <tbody><tr><td>Белонежная (опт)</td><td id="varIngrBel">—</td><td id="varEnergyBel">—</td><td id="varTotalBel">—</td></tr>
+        <tr><td>Французская штучка</td><td id="varIngrFran">—</td><td id="varEnergyFran">—</td><td id="varTotalFran">—</td></tr>
+        </tbody></table>
+    </details>
+
+    <details><summary>🏭 8. Постоянные затраты в месяц (для мини-пекарни)</summary>
+        <table><tr><th>Статья</th><th>Сумма (руб/мес)</th></tr>
+        <tr><td>Аренда (20 м², 13 500 руб/м²/год)</td><td id="rentMonthDisplay">22 500</td></tr>
+        <tr><td>Амортизация оборудования</td><td id="deprDisplay">5 354</td></tr>
+        <tr><td>Оплата труда пекаря (с налогами)</td><td id="laborTotalDisplay">—</td></tr>
+        <tr><td>Коммунальные услуги</td><td id="utilsDisplay">5 000</td></tr>
+        <tr><td><strong>Итого постоянные затраты в месяц</strong></td><td id="fixedTotalMonthDisplay">—</td></tr>
+        </table>
+    </details>
+
+    <details><summary>💵 9. Полная себестоимость (переменные + постоянные)</summary>
+        <table id="fullCostTable"><thead><tr><th>Мука</th><th>Переменные на 11 шт (руб)</th><th>Постоянные на 11 шт (руб)</th><th>Полная себестоимость 11 шт (руб)</th><th>На 1 буханку (руб)</th></tr></thead>
+        <tbody><tr><td>Белонежная (опт)</td><td id="fullVarBel">—</td><td id="fullFixBel">—</td><td id="fullTotalBel">—</td><td id="fullPerLoafBel">—</td></tr>
+        <tr><td>Французская штучка</td><td id="fullVarFran">—</td><td id="fullFixFran">—</td><td id="fullTotalFran">—</td><td id="fullPerLoafFran">—</td></tr>
+        </tbody></table>
+    </details>
+
+    <footer>⚡ Все расчёты интерактивны. Двойной клик по таблице 6 → AI-пояснение. Двойной клик по заголовку → сброс настроек. 🖨️ Печать. 💾 Все изменения сохраняются.</footer>
+</div>
+
+<!-- Модальные окна -->
+<div id="helpModal" class="modal"><div class="modal-content"><span class="close-modal">&times;</span><h3>📘 Справка</h3><p>Изменяйте параметры – все таблицы пересчитываются. Двойной клик по строке Таблицы 6 показывает подсказку AI. Двойной клик по строке таблицы магазинов муки открывает поиск Яндекса. Двойной клик по строке таблицы розничных цен – поиск цены на хлеб. Двойной клик по заголовку – восстановить предустановленные параметры. Все настройки сохраняются.</p><button id="closeModalBtn">Закрыть</button></div></div>
+<div id="aiModal" class="modal"><div class="modal-content"><span class="close-ai-modal">&times;</span><h3>🤖 AI-помощник</h3><div id="aiExplanationText"></div><button id="closeAiBtn">Закрыть</button></div></div>
+
+<script>
+    // Данные магазинов муки
+    let shopsData = [
+        { name: "Пятёрочка", french: 62.0, belon: null, type: "розница", searchFrench: "мука французская штучка пятёрочка цена", searchBelon: "мука белонежная пятёрочка цена" },
+        { name: "Магнит", french: 74.99, belon: null, type: "розница", searchFrench: "мука французская штучка магнит цена", searchBelon: "мука белонежная магнит цена" },
+        { name: "Лента", french: 65.0, belon: null, type: "розница", searchFrench: "мука французская штучка лента цена", searchBelon: "мука белонежная лента цена" },
+        { name: "Ашан", french: 52.0, belon: null, type: "розница", searchFrench: "мука французская штучка ашан цена", searchBelon: "мука белонежная ашан цена" },
+        { name: "Дикси", french: 49.99, belon: null, type: "розница", searchFrench: "мука французская штучка дикси цена", searchBelon: "мука белонежная дикси цена" },
+        { name: "ВкусВилл", french: null, belon: 75.0, type: "розница", searchFrench: "мука французская штучка вкусвилл цена", searchBelon: "мука белонежная вкусвилл цена" },
+        { name: "Перекрёсток", french: null, belon: null, type: "розница", searchFrench: "мука французская штучка перекрёсток цена", searchBelon: "мука белонежная перекрёсток цена" },
+        { name: "METRO (розница)", french: 44.9, belon: null, type: "розница", searchFrench: "мука французская штучка metro цена", searchBelon: "мука белонежная metro цена" },
+        { name: "Wildberries", french: 69.0, belon: null, type: "розница", searchFrench: "мука французская штучка wildberries цена", searchBelon: "мука белонежная wildberries цена" },
+        { name: "Ozon", french: null, belon: null, type: "розница", searchFrench: "мука французская штучка ozon цена", searchBelon: "мука белонежная ozon цена" },
+        { name: "METRO Cash&Carry (опт)", french: 42.0, belon: null, type: "опт", searchFrench: "мука французская штучка metro опт цена", searchBelon: "мука белонежная metro опт цена" },
+        { name: "Глобус ФудСити (опт)", french: 155.0, belon: 64.0, type: "опт", searchFrench: "мука французская штучка глобус фудсити цена", searchBelon: "мука белонежная глобус фудсити цена" },
+        { name: "Оптовая база Самсон (опт)", french: null, belon: 58.0, type: "опт", searchFrench: "мука французская штучка самсон опт цена", searchBelon: "мука белонежная самсон опт цена" }
+    ];
+
+    function renderShopsTable() {
+        const tbody = document.getElementById('shopsTableBody');
+        tbody.innerHTML = '';
+        shopsData.forEach((shop, idx) => {
+            const row = tbody.insertRow();
+            row.classList.add('clickable-row');
+            row.insertCell(0).innerText = shop.name;
+            const cellFrench = row.insertCell(1);
+            cellFrench.innerText = shop.french !== null ? shop.french.toFixed(2) : '—';
+            cellFrench.classList.add('editable-cell');
+            cellFrench.setAttribute('contenteditable', 'true');
+            cellFrench.addEventListener('blur', function(e) {
+                let val = parseFloat(e.target.innerText.replace(/[^\d.-]/g, ''));
+                if (!isNaN(val) && val > 0) {
+                    shopsData[idx].french = val;
+                    if (document.getElementById('flourType').value === 'french' && document.getElementById('shopSelect').value === shop.name) updateFlourPriceFromShop();
+                    updateAll();
+                    saveAllSettings();
+                } else e.target.innerText = shop.french !== null ? shop.french.toFixed(2) : '—';
+            });
+            const cellBelon = row.insertCell(2);
+            cellBelon.innerText = shop.belon !== null ? shop.belon.toFixed(2) : '—';
+            cellBelon.classList.add('editable-cell');
+            cellBelon.setAttribute('contenteditable', 'true');
+            cellBelon.addEventListener('blur', function(e) {
+                let val = parseFloat(e.target.innerText.replace(/[^\d.-]/g, ''));
+                if (!isNaN(val) && val > 0) {
+                    shopsData[idx].belon = val;
+                    if (document.getElementById('flourType').value === 'belon' && document.getElementById('shopSelect').value === shop.name) updateFlourPriceFromShop();
+                    updateAll();
+                    saveAllSettings();
+                } else e.target.innerText = shop.belon !== null ? shop.belon.toFixed(2) : '—';
+            });
+            row.insertCell(3).innerText = shop.type;
+            row.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                const flourType = document.getElementById('flourType').value;
+                let query = (flourType === 'french') ? shop.searchFrench : shop.searchBelon;
+                if (!query) query = `мука ${flourType === 'french' ? 'французская штучка' : 'белонежная'} ${shop.name} цена`;
+                window.open(`https://yandex.ru/search/?text=${encodeURIComponent(query)}`, '_blank');
+            });
+        });
+        const shopSelect = document.getElementById('shopSelect');
+        shopSelect.innerHTML = '';
+        shopsData.forEach(shop => { const opt = document.createElement('option'); opt.value = shop.name; opt.textContent = shop.name; shopSelect.appendChild(opt); });
+    }
+
+    function updateFlourPriceFromShop() {
+        const shopName = document.getElementById('shopSelect').value;
+        const flourType = document.getElementById('flourType').value;
+        const shop = shopsData.find(s => s.name === shopName);
+        let price = null;
+        if (shop) price = (flourType === 'french') ? shop.french : shop.belon;
+        const flourPriceInput = document.getElementById('flourPrice');
+        if (price !== null && price > 0) flourPriceInput.value = price;
+        else flourPriceInput.value = 72;
+        updateAll();
+        saveAllSettings();
+    }
+
+    function syncRetailPrice() {
+        const retailPriceInput = document.getElementById('retailPrice');
+        const ourPriceSpan = document.getElementById('ourPriceDisplay');
+        const price = parseFloat(retailPriceInput.value);
+        if (!isNaN(price)) ourPriceSpan.innerText = price.toFixed(2);
+        else ourPriceSpan.innerText = '0';
+        updateAll();
+        saveAllSettings();
+    }
+
+    const explanations = {
+        'Буханок в замесе': 'Количество буханок в одной партии. Влияет на масштаб и распределение постоянных затрат.',
+        'Расход муки на партию (кг)': 'Общий вес муки на партию = буханок × 0,4697 кг.',
+        'Затраты на муку (руб)': 'Цена муки × расход. Основная статья переменных затрат.',
+        'Энергия замеса (кВт·ч)': 'Мощность тестомеса × время замеса.',
+        'Энергия выпечки (кВт·ч)': 'Суммарная энергия на все циклы выпечки + доля разогрева.',
+        'Итого энергозатрат на партию (руб)': 'Стоимость электроэнергии (замес+выпечка).',
+        'Переменные затраты на партию (руб)': 'Мука + энергия.',
+        'Постоянные затраты на 1 партию (руб)*': 'Часть постоянных расходов месяца, приходящаяся на одну партию.',
+        'Циклов выпечки на замес': 'Количество закладок в печь для выпечки всех буханок замеса.',
+        'Партий (замесов) в месяц': 'Замесов в день × рабочих дней.',
+        'Выработка (буханок в месяц)': 'Буханок в замесе × партий в месяц.',
+        'Месячный фонд оплаты труда (с налогами)': 'Ставка × часы на партию × пекарей × партии × (1+страховые%).'
+    };
+    function showAiExplanation(rowText) {
+        const modal = document.getElementById('aiModal');
+        const explanationDiv = document.getElementById('aiExplanationText');
+        const text = rowText.trim();
+        explanationDiv.innerHTML = explanations[text] ? `<strong>${text}</strong><br><br>${explanations[text]}` : `<strong>${text}</strong><br><br>Нет описания.`;
+        modal.style.display = 'block';
+    }
+
+    function updateAll() {
+        let flourPrice = parseFloat(document.getElementById('flourPrice').value);
+        if (isNaN(flourPrice)) flourPrice = 72;
+        const flourPerLoaf = 0.4697;
+        const loavesPerBatch = parseInt(document.getElementById('loavesPerBatch').value);
+        const loavesPerOvenLoad = parseInt(document.getElementById('loavesPerOvenLoad').value);
+        const batchesPerDay = parseFloat(document.getElementById('batchesPerDay').value);
+        const workDaysMonth = parseFloat(document.getElementById('workDaysMonth').value);
+        const ovenPower = parseFloat(document.getElementById('ovenPower').value);
+        const bakingTimeMin = parseFloat(document.getElementById('bakingTimeMin').value);
+        const preheatTimeMin = parseFloat(document.getElementById('preheatTimeMin').value);
+        const tariff = parseFloat(document.getElementById('electricityTariff').value);
+        const mixerPower = parseFloat(document.getElementById('mixerPower').value);
+        const mixingTimeMin = parseFloat(document.getElementById('mixingTimeMin').value);
+        const rentAnnualPerSqm = parseFloat(document.getElementById('rentAnnualPerSqm').value);
+        const areaSqm = parseFloat(document.getElementById('areaSqm').value);
+        const depreciationMonth = parseFloat(document.getElementById('depreciationMonth').value);
+        const utilitiesMonth = parseFloat(document.getElementById('utilitiesMonth').value);
+        const laborRate = parseFloat(document.getElementById('laborRate').value);
+        const laborHoursPerBatch = parseFloat(document.getElementById('laborHoursPerBatch').value);
+        const bakersCount = parseFloat(document.getElementById('bakersCount').value);
+        const insuranceRate = parseFloat(document.getElementById('insuranceRate').value);
+        let retailPrice = parseFloat(document.getElementById('retailPrice').value);
+        if (isNaN(retailPrice)) retailPrice = 0;
+
+        const flourKgBatch = loavesPerBatch * flourPerLoaf;
+        const flourCostBatch = flourKgBatch * flourPrice;
+        const mixingHours = mixingTimeMin / 60;
+        const mixerEnergy = mixerPower * mixingHours;
+        let cycles = Math.ceil(loavesPerBatch / loavesPerOvenLoad);
+        if (cycles < 1) cycles = 1;
+        const bakingHoursPerCycle = bakingTimeMin / 60;
+        const preheatHours = preheatTimeMin / 60;
+        const preheatEnergyTotal = ovenPower * preheatHours;
+        let preheatEnergyPerBatch = batchesPerDay > 0 ? preheatEnergyTotal / batchesPerDay : 0;
+        const bakingEnergyPerCycle = ovenPower * bakingHoursPerCycle;
+        const totalBakingEnergyBatch = (bakingEnergyPerCycle * cycles) + preheatEnergyPerBatch;
+        const totalEnergyKwhBatch = mixerEnergy + totalBakingEnergyBatch;
+        const energyCostBatch = totalEnergyKwhBatch * tariff;
+        const variableCostBatch = flourCostBatch + energyCostBatch;
+        const variableCostPerLoaf = variableCostBatch / loavesPerBatch;
+
+        const rentMonth = (rentAnnualPerSqm * areaSqm) / 12;
+        const batchesPerMonth = batchesPerDay * workDaysMonth;
+        const totalLoavesPerMonth = batchesPerMonth * loavesPerBatch;
+        const laborHoursTotalMonth = laborHoursPerBatch * batchesPerMonth * bakersCount;
+        const laborCostMonthRaw = laborRate * laborHoursTotalMonth;
+        const insuranceCostMonth = laborCostMonthRaw * (insuranceRate / 100);
+        const totalLaborMonth = laborCostMonthRaw + insuranceCostMonth;
+        const fixedCostsMonth = rentMonth + totalLaborMonth + depreciationMonth + utilitiesMonth;
+        let fixedCostPerLoaf = 0, fixedCostPerBatch = 0;
+        if (totalLoavesPerMonth > 0) {
+            fixedCostPerLoaf = fixedCostsMonth / totalLoavesPerMonth;
+            fixedCostPerBatch = fixedCostsMonth / batchesPerMonth;
+        }
+        const totalCostPerLoaf = variableCostPerLoaf + fixedCostPerLoaf;
+        const totalMonthCost = variableCostBatch * batchesPerMonth + fixedCostsMonth;
+        const monthlyRevenue = totalLoavesPerMonth * retailPrice;
+        const ebitda = monthlyRevenue - totalMonthCost;
+
+        // Вывод в карточки
+        document.getElementById('costPerLoaf').innerHTML = totalCostPerLoaf.toFixed(2) + ' ₽';
+        document.getElementById('varCostPerLoaf').innerHTML = variableCostPerLoaf.toFixed(2) + ' ₽';
+        document.getElementById('fixCostPerLoaf').innerHTML = fixedCostPerLoaf.toFixed(2) + ' ₽';
+        document.getElementById('displayRetailPrice').innerHTML = retailPrice.toFixed(2) + ' ₽';
+        document.getElementById('monthlyRevenue').innerHTML = monthlyRevenue.toFixed(0) + ' ₽';
+        document.getElementById('totalMonthCost').innerHTML = totalMonthCost.toFixed(0) + ' ₽';
+        document.getElementById('ebitda').innerHTML = ebitda.toFixed(0) + ' ₽';
+
+        // Таблица 6
+        document.getElementById('detLoaves').innerText = loavesPerBatch;
+        document.getElementById('detFlour').innerText = flourKgBatch.toFixed(2) + ' кг';
+        document.getElementById('detFlourCost').innerText = flourCostBatch.toFixed(2) + ' ₽';
+        document.getElementById('detMixEnergy').innerText = mixerEnergy.toFixed(3) + ' кВт·ч';
+        document.getElementById('detBakeEnergy').innerText = totalBakingEnergyBatch.toFixed(3) + ' кВт·ч';
+        document.getElementById('detEnergyCost').innerText = energyCostBatch.toFixed(2) + ' ₽';
+        document.getElementById('detVarCost').innerHTML = variableCostBatch.toFixed(2) + ' ₽';
+        document.getElementById('detFixPerBatch').innerHTML = fixedCostPerBatch.toFixed(2) + ' ₽';
+        document.getElementById('detCycles').innerText = cycles;
+        document.getElementById('detBatchesMonth').innerText = batchesPerMonth;
+        document.getElementById('detTotalLoavesMonth').innerText = totalLoavesPerMonth;
+        document.getElementById('detLaborMonth').innerHTML = totalLaborMonth.toFixed(0) + ' ₽';
+
+        // Энергозатраты (таблица 6 спойлер)
+        const mixCost = (mixerEnergy * tariff).toFixed(2);
+        const preheatCost = (preheatEnergyTotal * tariff).toFixed(2);
+        const bakeCostTotal = (bakingEnergyPerCycle * cycles * tariff).toFixed(2);
+        if (document.getElementById('energyMixCost')) document.getElementById('energyMixCost').innerText = mixCost + ' ₽';
+        if (document.getElementById('energyPreheatCost')) document.getElementById('energyPreheatCost').innerText = preheatCost + ' ₽';
+        if (document.getElementById('energyBakeCost')) document.getElementById('energyBakeCost').innerText = bakeCostTotal + ' ₽';
+        if (document.getElementById('energyTotalCost')) document.getElementById('energyTotalCost').innerText = (mixerEnergy*tariff + totalBakingEnergyBatch*tariff).toFixed(2) + ' ₽';
+
+        // Таблица 7
+        const priceBel = 72, priceFran = 80;
+        const flourCostBel = flourKgBatch * priceBel;
+        const flourCostFran = flourKgBatch * priceFran;
+        const varEnergy = energyCostBatch;
+        if (document.getElementById('varIngrBel')) document.getElementById('varIngrBel').innerText = flourCostBel.toFixed(2) + ' ₽';
+        if (document.getElementById('varIngrFran')) document.getElementById('varIngrFran').innerText = flourCostFran.toFixed(2) + ' ₽';
+        if (document.getElementById('varEnergyBel')) document.getElementById('varEnergyBel').innerText = varEnergy.toFixed(2) + ' ₽';
+        if (document.getElementById('varEnergyFran')) document.getElementById('varEnergyFran').innerText = varEnergy.toFixed(2) + ' ₽';
+        if (document.getElementById('varTotalBel')) document.getElementById('varTotalBel').innerText = (flourCostBel + varEnergy).toFixed(2) + ' ₽';
+        if (document.getElementById('varTotalFran')) document.getElementById('varTotalFran').innerText = (flourCostFran + varEnergy).toFixed(2) + ' ₽';
+
+        // Таблица 8
+        if (document.getElementById('rentMonthDisplay')) document.getElementById('rentMonthDisplay').innerText = rentMonth.toFixed(0);
+        if (document.getElementById('deprDisplay')) document.getElementById('deprDisplay').innerText = depreciationMonth.toFixed(0);
+        if (document.getElementById('laborTotalDisplay')) document.getElementById('laborTotalDisplay').innerText = totalLaborMonth.toFixed(0) + ' ₽';
+        if (document.getElementById('utilsDisplay')) document.getElementById('utilsDisplay').innerText = utilitiesMonth.toFixed(0);
+        if (document.getElementById('fixedTotalMonthDisplay')) document.getElementById('fixedTotalMonthDisplay').innerText = fixedCostsMonth.toFixed(0) + ' ₽';
+
+        // Таблица 9
+        const varBelBatch = flourCostBel + varEnergy;
+        const varFranBatch = flourCostFran + varEnergy;
+        const fixBatch = fixedCostPerBatch;
+        if (document.getElementById('fullVarBel')) document.getElementById('fullVarBel').innerText = varBelBatch.toFixed(2);
+        if (document.getElementById('fullFixBel')) document.getElementById('fullFixBel').innerText = fixBatch.toFixed(2);
+        if (document.getElementById('fullTotalBel')) document.getElementById('fullTotalBel').innerText = (varBelBatch + fixBatch).toFixed(2);
+        if (document.getElementById('fullPerLoafBel')) document.getElementById('fullPerLoafBel').innerText = ((varBelBatch + fixBatch) / loavesPerBatch).toFixed(2);
+        if (document.getElementById('fullVarFran')) document.getElementById('fullVarFran').innerText = varFranBatch.toFixed(2);
+        if (document.getElementById('fullFixFran')) document.getElementById('fullFixFran').innerText = fixBatch.toFixed(2);
+        if (document.getElementById('fullTotalFran')) document.getElementById('fullTotalFran').innerText = (varFranBatch + fixBatch).toFixed(2);
+        if (document.getElementById('fullPerLoafFran')) document.getElementById('fullPerLoafFran').innerText = ((varFranBatch + fixBatch) / loavesPerBatch).toFixed(2);
+    }
+
+    function saveAllSettings() {
+        const fields = ['flourType', 'shopSelect', 'loavesPerBatch', 'loavesPerOvenLoad', 'batchesPerDay', 'workDaysMonth',
+            'ovenPower', 'bakingTimeMin', 'preheatTimeMin', 'electricityTariff', 'mixerPower', 'mixingTimeMin',
+            'rentAnnualPerSqm', 'areaSqm', 'depreciationMonth', 'utilitiesMonth', 'laborRate', 'laborHoursPerBatch',
+            'bakersCount', 'insuranceRate', 'retailPrice'];
+        fields.forEach(id => { const el = document.getElementById(id); if (el) localStorage.setItem(id, el.value); });
+        localStorage.setItem('shopsData', JSON.stringify(shopsData));
+        const retailIds = ['priceMassaMadre', 'priceHokkaido', 'priceHome', 'priceZerno', 'priceRzhanoi'];
+        retailIds.forEach(id => { const el = document.getElementById(id); if (el) localStorage.setItem(id, el.innerText); });
+    }
+
+    function loadAllSettings() {
+        const fields = ['flourType', 'shopSelect', 'loavesPerBatch', 'loavesPerOvenLoad', 'batchesPerDay', 'workDaysMonth',
+            'ovenPower', 'bakingTimeMin', 'preheatTimeMin', 'electricityTariff', 'mixerPower', 'mixingTimeMin',
+            'rentAnnualPerSqm', 'areaSqm', 'depreciationMonth', 'utilitiesMonth', 'laborRate', 'laborHoursPerBatch',
+            'bakersCount', 'insuranceRate', 'retailPrice'];
+        fields.forEach(id => { const saved = localStorage.getItem(id); const el = document.getElementById(id); if (saved !== null && el) el.value = saved; });
+        const savedShops = localStorage.getItem('shopsData');
+        if (savedShops) { try { shopsData = JSON.parse(savedShops); } catch(e) {} }
+        const retailIds = ['priceMassaMadre', 'priceHokkaido', 'priceHome', 'priceZerno', 'priceRzhanoi'];
+        retailIds.forEach(id => { const saved = localStorage.getItem(id); const el = document.getElementById(id); if (saved !== null && el) el.innerText = saved; });
+    }
+
+    function resetToDefaults() {
+        document.getElementById('flourType').value = 'french';
+        document.getElementById('shopSelect').value = 'Пятёрочка';
+        document.getElementById('loavesPerBatch').value = 11;
+        document.getElementById('loavesPerOvenLoad').value = 3;
+        document.getElementById('batchesPerDay').value = 1;
+        document.getElementById('workDaysMonth').value = 22;
+        document.getElementById('ovenPower').value = 4.0;
+        document.getElementById('bakingTimeMin').value = 35;
+        document.getElementById('preheatTimeMin').value = 15;
+        document.getElementById('electricityTariff').value = 6.29;
+        document.getElementById('mixerPower').value = 1.5;
+        document.getElementById('mixingTimeMin').value = 15;
+        document.getElementById('rentAnnualPerSqm').value = 13500;
+        document.getElementById('areaSqm').value = 20;
+        document.getElementById('depreciationMonth').value = 5354;
+        document.getElementById('utilitiesMonth').value = 5000;
+        document.getElementById('laborRate').value = 300;
+        document.getElementById('laborHoursPerBatch').value = 3.5;
+        document.getElementById('bakersCount').value = 1;
+        document.getElementById('insuranceRate').value = 30.2;
+        document.getElementById('retailPrice').value = 200;
+        shopsData = [
+            { name: "Пятёрочка", french: 62.0, belon: null, type: "розница", searchFrench: "мука французская штучка пятёрочка цена", searchBelon: "мука белонежная пятёрочка цена" },
+            { name: "Магнит", french: 74.99, belon: null, type: "розница", searchFrench: "мука французская штучка магнит цена", searchBelon: "мука белонежная магнит цена" },
+            { name: "Лента", french: 65.0, belon: null, type: "розница", searchFrench: "мука французская штучка лента цена", searchBelon: "мука белонежная лента цена" },
+            { name: "Ашан", french: 52.0, belon: null, type: "розница", searchFrench: "мука французская штучка ашан цена", searchBelon: "мука белонежная ашан цена" },
+            { name: "Дикси", french: 49.99, belon: null, type: "розница", searchFrench: "мука французская штучка дикси цена", searchBelon: "мука белонежная дикси цена" },
+            { name: "ВкусВилл", french: null, belon: 75.0, type: "розница", searchFrench: "мука французская штучка вкусвилл цена", searchBelon: "мука белонежная вкусвилл цена" },
+            { name: "Перекрёсток", french: null, belon: null, type: "розница", searchFrench: "мука французская штучка перекрёсток цена", searchBelon: "мука белонежная перекрёсток цена" },
+            { name: "METRO (розница)", french: 44.9, belon: null, type: "розница", searchFrench: "мука французская штучка metro цена", searchBelon: "мука белонежная metro цена" },
+            { name: "Wildberries", french: 69.0, belon: null, type: "розница", searchFrench: "мука французская штучка wildberries цена", searchBelon: "мука белонежная wildberries цена" },
+            { name: "Ozon", french: null, belon: null, type: "розница", searchFrench: "мука французская штучка ozon цена", searchBelon: "мука белонежная ozon цена" },
+            { name: "METRO Cash&Carry (опт)", french: 42.0, belon: null, type: "опт", searchFrench: "мука французская штучка metro опт цена", searchBelon: "мука белонежная metro опт цена" },
+            { name: "Глобус ФудСити (опт)", french: 155.0, belon: 64.0, type: "опт", searchFrench: "мука французская штучка глобус фудсити цена", searchBelon: "мука белонежная глобус фудсити цена" },
+            { name: "Оптовая база Самсон (опт)", french: null, belon: 58.0, type: "опт", searchFrench: "мука французская штучка самсон опт цена", searchBelon: "мука белонежная самсон опт цена" }
+        ];
+        document.getElementById('priceMassaMadre').innerText = '320';
+        document.getElementById('priceHokkaido').innerText = '280';
+        document.getElementById('priceHome').innerText = '190';
+        document.getElementById('priceZerno').innerText = '210';
+        document.getElementById('priceRzhanoi').innerText = '175';
+        renderShopsTable();
+        updateFlourPriceFromShop();
+        syncRetailPrice();
+        updateAll();
+        saveAllSettings();
+        alert('Предустановленные параметры восстановлены и сохранены.');
+    }
+
+    function initRetailPricesDblClick() {
+        const rows = document.querySelectorAll('#retailPricesTable tbody tr');
+        rows.forEach(row => {
+            const nameCell = row.cells[0];
+            if (nameCell && nameCell.classList && nameCell.classList.contains('clickable-row')) {
+                const searchUrl = nameCell.getAttribute('data-search');
+                if (searchUrl) {
+                    row.addEventListener('dblclick', (e) => { e.stopPropagation(); window.open(searchUrl, '_blank'); });
+                }
+            }
+        });
+    }
+
+    window.onload = () => {
+        loadAllSettings();
+        renderShopsTable();
+        updateFlourPriceFromShop();
+        syncRetailPrice();
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(el => {
+            if (el.id !== 'flourPrice' && el.id !== 'shopSelect') {
+                el.addEventListener('change', () => saveAllSettings());
+                el.addEventListener('input', () => saveAllSettings());
+            }
+        });
+        document.getElementById('shopSelect').addEventListener('change', () => saveAllSettings());
+        document.getElementById('flourType').addEventListener('change', () => saveAllSettings());
+        const retailEditable = ['priceMassaMadre', 'priceHokkaido', 'priceHome', 'priceZerno', 'priceRzhanoi'];
+        retailEditable.forEach(id => { const cell = document.getElementById(id); if (cell) { cell.addEventListener('blur', () => saveAllSettings()); cell.addEventListener('input', () => saveAllSettings()); } });
+        const detailRows = document.querySelectorAll('#detailTable tbody tr');
+        detailRows.forEach(row => { row.classList.add('clickable-row'); row.addEventListener('dblclick', () => showAiExplanation(row.cells[0].innerText)); });
+        const resetBtn = document.getElementById('resetDefaultsBtn');
+        resetBtn.addEventListener('dblclick', resetToDefaults);
+        document.getElementById('printBtn').addEventListener('click', () => window.print());
+        const helpModal = document.getElementById('helpModal'), openHelp = document.getElementById('openHelpBtn');
+        const closeHelpSpan = document.querySelector('.close-modal'), closeHelpBtn = document.getElementById('closeModalBtn');
+        const aiModal = document.getElementById('aiModal'), closeAiSpan = document.querySelector('.close-ai-modal'), closeAiBtn = document.getElementById('closeAiBtn');
+        openHelp.onclick = () => helpModal.style.display = 'block';
+        if (closeHelpSpan) closeHelpSpan.onclick = () => helpModal.style.display = 'none';
+        if (closeHelpBtn) closeHelpBtn.onclick = () => helpModal.style.display = 'none';
+        if (closeAiSpan) closeAiSpan.onclick = () => aiModal.style.display = 'none';
+        if (closeAiBtn) closeAiBtn.onclick = () => aiModal.style.display = 'none';
+        window.onclick = (e) => { if (e.target == helpModal) helpModal.style.display = 'none'; if (e.target == aiModal) aiModal.style.display = 'none'; };
+        initRetailPricesDblClick();
+        updateAll();
+    };
+</script>
+</body>
+</html>
